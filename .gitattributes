@@ -1,0 +1,11 @@
+# 모든 텍스트 파일을 LF로 고정한다 (Windows autocrlf 와 무관하게 CI·다른 PC에서 같은 결과)
+* text=auto eol=lf
+
+# 컨테이너(Linux)·CI에서 실행하는 스크립트와 설정은 LF로 고정한다.
+*.sh text eol=lf
+*.py text eol=lf
+*.yml text eol=lf
+Jenkinsfile text eol=lf
+
+# 바이너리 취급 (번들된 라이브러리는 diff 대상에서 제외)
+src/verreport/static/chart.umd.min.js -diff linguist-vendored
