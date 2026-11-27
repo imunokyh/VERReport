@@ -1,0 +1,46 @@
+# Example: build, run the tools, generate the VERReport dashboard, upload it.
+name: verification
+on: [push, pull_request]
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y clang llvm cppcheck cmake libgtest-dev
+          pip install lizard
+          pip install git+https://github.com/imunokyh/VERReport.git
+
+      - name: Build and test with coverage
+        run: |
+          cmake -B build -DCMAKE_CXX_COMPILER=clang++ \
+                -DCMAKE_CXX_FLAGS="-fprofile-instr-generate -fcoverage-mapping"
+          cmake --build build
+          LLVM_PROFILE_FILE=cov-%p.profraw ./build/unit_tests --gtest_output=xml:gtest.xml || true
+          llvm-profdata merge -sparse cov-*.profraw -o cov.profdata
+          llvm-cov export ./build/unit_tests -instr-profile=cov.profdata -format=text > llvm-cov.json
+
+      - name: Static analysis
+        run: |
+          cppcheck --xml --xml-version=2 src 2> cppcheck.xml || true
+          lizard src --csv > lizard.csv || true
+
+      - name: Generate report
+        run: |
+          verreport generate \
+            --gtest gtest.xml --llvm-cov llvm-cov.json \
+            --cppcheck cppcheck.xml --lizard lizard.csv \
+            --project "${{ github.repository }}" \
+            -o report --fail-on-violation
+        # BUILD number / commit / branch come from GITHUB_RUN_NUMBER / GITHUB_SHA / GITHUB_REF_NAME
+
+      - name: Upload report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: verification-report
+          path: report/

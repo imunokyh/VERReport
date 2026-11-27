@@ -1,0 +1,26 @@
+{% macro toolbar(label, options) %}
+<div class="toolbar">
+  <input type="search" id="q" placeholder="검색 (모듈, 파일, 이름, 메시지)" autocomplete="off">
+  <select id="flag">
+    <option value="">{{ label }}: 전체</option>
+    {% for value, text in options %}
+    <option value="{{ value }}">{{ text }}</option>
+    {% endfor %}
+  </select>
+  <button type="button" id="expand">모두 펼치기</button>
+  <button type="button" id="collapse">모두 접기</button>
+  <span id="count" class="muted"></span>
+</div>
+{% endmacro %}
+
+{% macro chips(items) %}
+<span class="chips">{% for label, value, cls in items %}<span class="chip {{ cls }}">{{ label }} <b>{{ value }}</b></span>{% endfor %}</span>
+{% endmacro %}
+
+{% macro page_head(title, ok) %}
+<div class="page-head">
+  <h2>{{ title }}</h2>
+  <span class="badge {{ 'pass' if ok else 'fail' }}">{{ 'PASS' if ok else 'FAIL' }}</span>
+  <a class="back" href="index.html">&larr; 대시보드</a>
+</div>
+{% endmacro %}

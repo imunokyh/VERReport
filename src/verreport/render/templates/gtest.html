@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% from "_macros.html" import toolbar, chips, page_head %}
+{% set g = s.gtest %}
+{% block title %}Google Test{% endblock %}
+
+{% block content %}
+{{ page_head(tools.gtest, g.passed_ok) }}
+<div class="summary-line">
+  {{ chips([('Total', g.total, ''), ('Passed', g.passed, 'ok'), ('Failed', g.failed, 'bad' if g.failed else ''),
+            ('Skipped', g.skipped, ''), ('통과율', '%.1f%%'|format(g.pass_rate), ''),
+            ('소요', '%.3fs'|format(g.time_sec), '')]) }}
+</div>
+{{ toolbar('상태', [('failed', '실패'), ('skipped', '스킵'), ('passed', '통과')]) }}
+
+<div id="tree">
+{% for m in g.modules %}
+<details class="module" open>
+  <summary><span class="name">{{ m.name }}</span>
+    {{ chips([('Total', m.stats.total, ''), ('Fail', m.stats.failed, 'bad' if m.stats.failed else ''), ('Skip', m.stats.skipped, '')]) }}
+  </summary>
+  {% for f in m.files %}
+  <details class="file" {{ 'open' if f.stats.failed }}>
+    <summary><span class="name">{{ f.path }}</span>
+      {{ chips([('Total', f.stats.total, ''), ('Fail', f.stats.failed, 'bad' if f.stats.failed else ''), ('Skip', f.stats.skipped, '')]) }}
+    </summary>
+    <table class="sortable">
+      <thead><tr>
+        <th data-sort="text">Suite</th><th data-sort="text">Test</th><th data-sort="text">Status</th>
+        <th data-sort="num" class="num">Time(s)</th><th data-sort="num" class="num">Line</th><th>Message</th>
+      </tr></thead>
+      <tbody>
+      {% for c in f.items %}
+        <tr class="row" data-flag="{{ c.status.value }}" data-text="{{ (c.suite ~ ' ' ~ c.name ~ ' ' ~ c.message)|lower }}">
+          <td>{{ c.suite }}</td><td>{{ c.name }}</td>
+          <td><span class="status {{ c.status.value }}">{{ c.status.value }}</span></td>
+          <td class="num" data-v="{{ c.time_sec }}">{{ '%.3f'|format(c.time_sec) }}</td>
+          <td class="num" data-v="{{ c.line }}">{{ c.line or '' }}</td>
+          <td>{% if c.message %}<details class="msg"><summary>실패 메시지</summary><pre>{{ c.message }}</pre></details>{% endif %}</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </details>
+  {% endfor %}
+</details>
+{% endfor %}
+<p id="nomatch" class="empty" hidden>조건에 맞는 항목이 없습니다.</p>
+</div>
+{% endblock %}
+
+{% block scripts %}<script src="static/detail.js"></script>{% endblock %}

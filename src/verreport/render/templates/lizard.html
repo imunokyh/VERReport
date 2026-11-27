@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% from "_macros.html" import toolbar, chips, page_head %}
+{% set z = s.lizard %}
+{% block title %}Lizard{% endblock %}
+
+{% macro stat_chips(st) %}
+{{ chips([('Functions', st.functions, ''),
+          ('CCN>' ~ z.ccn_limit, st.ccn_violations, 'bad' if st.ccn_violations else ''),
+          ('Length>' ~ z.length_limit, st.length_violations, 'bad' if st.length_violations else ''),
+          ('Max CCN', st.max_ccn, ''), ('Max Length', st.max_length, '')]) }}
+{% endmacro %}
+
+{% block content %}
+{{ page_head(tools.lizard, z.passed_ok) }}
+<div class="summary-line">
+  {{ chips([('전체 함수', z.total_functions, ''), ('위반 함수', z.violations, 'bad' if z.violations else 'ok'),
+            ('CCN > ' ~ z.ccn_limit, z.ccn_violations, 'bad' if z.ccn_violations else ''),
+            ('길이 > ' ~ z.length_limit ~ '라인', z.length_violations, 'bad' if z.length_violations else '')]) }}
+</div>
+{{ toolbar('위반', [('violation', '위반 함수 전체'), ('ccn', 'CCN 초과'), ('length', '라인수 초과')]) }}
+
+<div id="tree">
+{% for m in z.modules %}
+<details class="module" open>
+  <summary><span class="name">{{ m.name }}</span> {{ stat_chips(m.stats) }}</summary>
+  {% for f in m.files %}
+  <details class="file" {{ 'open' if f.stats.violations }}>
+    <summary><span class="name">{{ f.path }}</span> {{ stat_chips(f.stats) }}</summary>
+    <table class="sortable">
+      <thead><tr>
+        <th data-sort="text">Function</th><th data-sort="num" class="num">Lines</th>
+        <th data-sort="num" class="num">NLOC</th><th data-sort="num" class="num">CCN</th>
+        <th data-sort="num" class="num">Length</th><th data-sort="num" class="num">Params</th>
+      </tr></thead>
+      <tbody>
+      {% for fn in f.items %}
+        {% set ccn_bad = fn.ccn > z.ccn_limit %}
+        {% set len_bad = fn.length > z.length_limit %}
+        {% set flags = ((['violation'] if ccn_bad or len_bad else []) + (['ccn'] if ccn_bad else []) + (['length'] if len_bad else []))|join(' ') %}
+        <tr class="row" data-flag="{{ flags }}" data-text="{{ (fn.name ~ ' ' ~ fn.file)|lower }}">
+          <td>{{ fn.name }}</td>
+          <td class="num" data-v="{{ fn.start_line }}">{{ fn.start_line }}&ndash;{{ fn.end_line }}</td>
+          <td class="num" data-v="{{ fn.nloc }}">{{ fn.nloc }}</td>
+          <td class="num {{ 'bad' if ccn_bad }}" data-v="{{ fn.ccn }}">{{ fn.ccn }}</td>
+          <td class="num {{ 'bad' if len_bad }}" data-v="{{ fn.length }}">{{ fn.length }}</td>
+          <td class="num" data-v="{{ fn.params }}">{{ fn.params }}</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </details>
+  {% endfor %}
+</details>
+{% endfor %}
+<p id="nomatch" class="empty" hidden>조건에 맞는 항목이 없습니다.</p>
+</div>
+{% endblock %}
+
+{% block scripts %}<script src="static/detail.js"></script>{% endblock %}

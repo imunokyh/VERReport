@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% from "_macros.html" import toolbar, chips, page_head %}
+{% set c = s.coverage %}
+{% block title %}Coverage{% endblock %}
+
+{% macro cov_chips(st) %}
+{% set items = [
+  ('Lines', '%.1f%% (%d/%d)'|format(st.lines.percent, st.lines.covered, st.lines.count), 'bad' if st.lines.percent < c.target else ''),
+  ('Functions', '%.1f%% (%d/%d)'|format(st.functions.percent, st.functions.covered, st.functions.count), ''),
+  ('Regions', '%.1f%%'|format(st.regions.percent), ''),
+  ('Branches', '%.1f%%'|format(st.branches.percent), '')] %}
+{% if st.mcdc.count %}{% set _ = items.append(('MC/DC', '%.1f%% (%d/%d)'|format(st.mcdc.percent, st.mcdc.covered, st.mcdc.count), 'bad' if st.mcdc.percent < 100 else '')) %}{% endif %}
+{{ chips(items) }}
+{% endmacro %}
+
+{% block content %}
+{{ page_head(tools.coverage, c.passed_ok) }}
+<div class="summary-line">
+  {{ cov_chips(c) }}
+  <span class="muted">라인 커버리지 목표 {{ '%g'|format(c.target) }}%</span>
+</div>
+{{ toolbar('함수', [('uncovered', '미실행 함수 (실행 0회)'), ('partial', '일부 미커버 (region 미달)')]) }}
+
+<div id="tree">
+{% for m in c.modules %}
+<details class="module" open>
+  <summary><span class="name">{{ m.name }}</span> {{ cov_chips(m.stats) }}</summary>
+  {% for f in m.files %}
+  {% set low = f.stats.lines.percent < c.target %}
+  <details class="file" {{ 'open' if low }}>
+    <summary><span class="name">{{ f.path }}</span> {{ cov_chips(f.stats) }}
+      <span class="bar" title="line coverage"><i class="{{ 'low' if low }}" style="width: {{ '%.1f'|format(f.stats.lines.percent) }}%"></i></span>
+    </summary>
+    <table class="sortable">
+      <thead><tr>
+        <th data-sort="text">Function</th><th data-sort="num" class="num">Line</th>
+        <th data-sort="num" class="num">Executions</th><th data-sort="num" class="num">Regions covered</th>
+        <th data-sort="num" class="num">Region %</th>
+      </tr></thead>
+      <tbody>
+      {% for fn in f.items %}
+        {% set flags = ('uncovered partial' if fn.execution_count == 0 else ('partial' if fn.regions.covered < fn.regions.count else 'full')) %}
+        <tr class="row" data-flag="{{ flags }}" data-text="{{ (fn.name ~ ' ' ~ f.path)|lower }}">
+          <td>{{ fn.name }}</td>
+          <td class="num" data-v="{{ fn.line }}">{{ fn.line }}</td>
+          <td class="num {{ 'bad' if fn.execution_count == 0 }}" data-v="{{ fn.execution_count }}">{{ fn.execution_count }}</td>
+          <td class="num" data-v="{{ fn.regions.covered }}">{{ fn.regions.covered }} / {{ fn.regions.count }}</td>
+          <td class="num {{ 'bad' if fn.regions.percent < 100 }}" data-v="{{ fn.regions.percent }}">{{ '%.1f'|format(fn.regions.percent) }}%</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </details>
+  {% endfor %}
+</details>
+{% endfor %}
+<p id="nomatch" class="empty" hidden>조건에 맞는 항목이 없습니다.</p>
+</div>
+{% endblock %}
+
+{% block scripts %}<script src="static/detail.js"></script>{% endblock %}

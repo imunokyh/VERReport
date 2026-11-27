@@ -1,0 +1,132 @@
+{% extends "base.html" %}
+{% block title %}Dashboard{% endblock %}
+
+{% macro badge(ok) %}<span class="badge {{ 'pass' if ok else 'fail' }}">{{ 'PASS' if ok else 'FAIL' }}</span>{% endmacro %}
+
+{% macro card_head(key, title, ok, has_result) %}
+<div class="card-head">
+  <h2>{{ title }}</h2>
+  {% if has_result %}{{ badge(ok) }}{% else %}<span class="badge none">NO DATA</span>{% endif %}
+</div>
+{% endmacro %}
+
+{% block content %}
+<section class="tiles">
+  {% if s.gtest %}
+  <div class="tile"><div class="tile-label">테스트 통과율</div>
+    <div class="tile-value">{{ '%.1f'|format(s.gtest.pass_rate) }}<small>%</small></div>
+    <div class="tile-sub">{{ s.gtest.passed }} / {{ s.gtest.total - s.gtest.skipped }} 실행 · 실패 {{ s.gtest.failed }}</div></div>
+  {% endif %}
+  {% if s.coverage %}
+  <div class="tile"><div class="tile-label">라인 커버리지</div>
+    <div class="tile-value">{{ '%.1f'|format(s.coverage.lines.percent) }}<small>%</small></div>
+    <div class="tile-sub">목표 {{ '%g'|format(s.coverage.target) }}%</div></div>
+  {% endif %}
+  {% if s.cppcheck %}
+  <div class="tile"><div class="tile-label">CPPCheck 위반</div>
+    <div class="tile-value">{{ s.cppcheck.total }}</div>
+    <div class="tile-sub">error {{ s.cppcheck.by_severity.get('error', 0) }}</div></div>
+  {% endif %}
+  {% if s.lizard %}
+  <div class="tile"><div class="tile-label">복잡도/길이 위반</div>
+    <div class="tile-value">{{ s.lizard.violations }}</div>
+    <div class="tile-sub">전체 {{ s.lizard.total_functions }}개 함수 중</div></div>
+  {% endif %}
+</section>
+
+<section class="grid">
+
+  <article class="card">
+    {{ card_head('gtest', tools.gtest, s.gtest and s.gtest.passed_ok, s.gtest) }}
+    {% if s.gtest %}
+    <div class="chart-box"><canvas id="chart-gtest"></canvas></div>
+    <table>
+      <thead><tr><th>Suite</th><th class="num">Total</th><th class="num">Pass</th><th class="num">Fail</th><th class="num">Skip</th></tr></thead>
+      <tbody>
+      {% for x in s.gtest.suites %}
+        <tr><td>{{ x.name }}</td><td class="num">{{ x.total }}</td><td class="num">{{ x.passed }}</td>
+            <td class="num {{ 'bad' if x.failed }}">{{ x.failed }}</td><td class="num">{{ x.skipped }}</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    <a class="btn" href="gtest.html">상세 결과 보기</a>
+    {% else %}<p class="empty">결과 파일이 제공되지 않았습니다.</p>{% endif %}
+  </article>
+
+  <article class="card">
+    {{ card_head('coverage', tools.coverage, s.coverage and s.coverage.passed_ok, s.coverage) }}
+    {% if s.coverage %}
+    <div class="chart-box"><canvas id="chart-coverage"></canvas></div>
+    <table>
+      <thead><tr><th>Module</th><th class="num">Lines</th><th class="num">Functions</th><th class="num">Branches</th>{% if s.coverage.mcdc.count %}<th class="num">MC/DC</th>{% endif %}</tr></thead>
+      <tbody>
+      {% for m in s.coverage.modules %}
+        <tr><td>{{ m.name }}</td>
+            <td class="num {{ 'bad' if m.stats.lines.percent < s.coverage.target }}">{{ '%.1f'|format(m.stats.lines.percent) }}%</td>
+            <td class="num">{{ '%.1f'|format(m.stats.functions.percent) }}%</td>
+            <td class="num">{{ '%.1f'|format(m.stats.branches.percent) }}%</td>
+            {% if s.coverage.mcdc.count %}<td class="num {{ 'bad' if m.stats.mcdc.percent < 100 }}">{{ '%.1f'|format(m.stats.mcdc.percent) }}%</td>{% endif %}</tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    <a class="btn" href="coverage.html">상세 결과 보기</a>
+    {% else %}<p class="empty">결과 파일이 제공되지 않았습니다.</p>{% endif %}
+  </article>
+
+  <article class="card">
+    {{ card_head('cppcheck', tools.cppcheck, s.cppcheck and s.cppcheck.passed_ok, s.cppcheck) }}
+    {% if s.cppcheck and s.cppcheck.total == 0 %}
+    <p class="clean">&#10003; 위반 사항이 없습니다.</p>
+    <a class="btn" href="cppcheck.html">상세 결과 보기</a>
+    {% elif s.cppcheck %}
+    <div class="chart-box"><canvas id="chart-cppcheck"></canvas></div>
+    <table>
+      <thead><tr><th>Module</th><th class="num">Total</th><th class="num">Error</th><th class="num">Warning</th><th class="num">Other</th></tr></thead>
+      <tbody>
+      {% for m in s.cppcheck.modules %}
+        {% set sev = m.stats.by_severity %}
+        <tr><td>{{ m.name }}</td><td class="num">{{ m.stats.total }}</td>
+            <td class="num {{ 'bad' if sev.get('error') }}">{{ sev.get('error', 0) }}</td>
+            <td class="num">{{ sev.get('warning', 0) }}</td>
+            <td class="num">{{ m.stats.total - sev.get('error', 0) - sev.get('warning', 0) }}</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    <a class="btn" href="cppcheck.html">상세 결과 보기</a>
+    {% else %}<p class="empty">결과 파일이 제공되지 않았습니다.</p>{% endif %}
+  </article>
+
+  <article class="card">
+    {{ card_head('lizard', tools.lizard, s.lizard and s.lizard.passed_ok, s.lizard) }}
+    {% if s.lizard and s.lizard.violations == 0 %}
+    {% set mx = s.lizard.modules|map(attribute='stats')|list %}
+    <p class="clean">&#10003; {{ s.lizard.total_functions }}개 함수 모두 기준 이내입니다.<br>
+      <span class="muted">최대 CCN {{ mx|map(attribute='max_ccn')|max }} (한도 {{ s.lizard.ccn_limit }}) ·
+      최대 길이 {{ mx|map(attribute='max_length')|max }}라인 (한도 {{ s.lizard.length_limit }})</span></p>
+    <a class="btn" href="lizard.html">상세 결과 보기</a>
+    {% elif s.lizard %}
+    <div class="chart-box"><canvas id="chart-lizard"></canvas></div>
+    <table>
+      <thead><tr><th>Function</th><th class="num">CCN</th><th class="num">Length</th></tr></thead>
+      <tbody>
+      {% for f in s.lizard.worst[:5] %}
+        <tr><td title="{{ f.file }}:{{ f.start_line }}">{{ f.name }}</td>
+            <td class="num {{ 'bad' if f.ccn > s.lizard.ccn_limit }}">{{ f.ccn }}</td>
+            <td class="num {{ 'bad' if f.length > s.lizard.length_limit }}">{{ f.length }}</td></tr>
+      {% else %}
+        <tr><td colspan="3" class="empty">위반 함수 없음</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    <a class="btn" href="lizard.html">상세 결과 보기</a>
+    {% else %}<p class="empty">결과 파일이 제공되지 않았습니다.</p>{% endif %}
+  </article>
+
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script id="report-data" type="application/json">{{ chart_data|tojson }}</script>
+<script src="static/chart.umd.min.js"></script>
+<script src="static/dashboard.js"></script>
+{% endblock %}

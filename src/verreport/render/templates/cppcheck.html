@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% from "_macros.html" import toolbar, chips, page_head %}
+{% set cc = s.cppcheck %}
+{% block title %}CPPCheck{% endblock %}
+
+{% macro sev_chips(total, by_sev) %}
+{% set items = [('Total', total, '')] %}
+{% for sev, n in by_sev.items() %}{% set _ = items.append((sev, n, 'bad' if sev == 'error' else '')) %}{% endfor %}
+{{ chips(items) }}
+{% endmacro %}
+
+{% block content %}
+{{ page_head(tools.cppcheck, cc.passed_ok) }}
+<div class="summary-line">
+  {{ sev_chips(cc.total, cc.by_severity) }}
+</div>
+{% set sev_opts = [] %}
+{% for sev, n in cc.by_severity.items() %}{% set _ = sev_opts.append((sev, sev ~ ' (' ~ n ~ ')')) %}{% endfor %}
+{{ toolbar('Severity', sev_opts) }}
+
+<div id="tree">
+{% for m in cc.modules %}
+<details class="module" open>
+  <summary><span class="name">{{ m.name }}</span> {{ sev_chips(m.stats.total, m.stats.by_severity) }}</summary>
+  {% for f in m.files %}
+  <details class="file" {{ 'open' if f.stats.by_severity.get('error') }}>
+    <summary><span class="name">{{ f.path }}</span> {{ sev_chips(f.stats.total, f.stats.by_severity) }}</summary>
+    <table class="sortable">
+      <thead><tr>
+        <th data-sort="text">Severity</th><th data-sort="text">Rule</th>
+        <th data-sort="num" class="num">Line</th><th data-sort="num" class="num">Col</th><th data-sort="text">Message</th>
+      </tr></thead>
+      <tbody>
+      {% for v in f.items %}
+        <tr class="row" data-flag="{{ v.severity }}" data-text="{{ (v.rule_id ~ ' ' ~ v.message ~ ' ' ~ v.file)|lower }}">
+          <td><span class="status sev-{{ v.severity }}">{{ v.severity }}</span></td>
+          <td>{{ v.rule_id }}</td>
+          <td class="num" data-v="{{ v.line }}">{{ v.line or '' }}</td>
+          <td class="num" data-v="{{ v.column }}">{{ v.column or '' }}</td>
+          <td>{{ v.message }}</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </details>
+  {% endfor %}
+</details>
+{% endfor %}
+<p id="nomatch" class="empty" hidden>조건에 맞는 항목이 없습니다.</p>
+</div>
+{% endblock %}
+
+{% block scripts %}<script src="static/detail.js"></script>{% endblock %}

@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites tests="8" failures="2" disabled="1" errors="0" time="0.052" timestamp="2026-11-27T09:12:03" name="AllTests">
+  <testsuite name="ParserTest" tests="3" failures="1" disabled="0" skipped="0" errors="0" time="0.018" timestamp="2026-11-27T09:12:03">
+    <testcase name="ParsesEmptyInput" file="tests/core/parser_test.cc" line="12" status="run" result="completed" time="0.001" classname="ParserTest" />
+    <testcase name="ParsesNestedBlocks" file="tests/core/parser_test.cc" line="24" status="run" result="completed" time="0.012" classname="ParserTest" />
+    <testcase name="RejectsMalformedHeader" file="tests/core/parser_test.cc" line="41" status="run" result="completed" time="0.005" classname="ParserTest">
+      <failure message="Expected equality of these values:&#x0A;  result.code&#x0A;    Which is: 2&#x0A;  ERR_BAD_HEADER&#x0A;    Which is: 5" type=""><![CDATA[tests/core/parser_test.cc:44
+Expected equality of these values:
+  result.code
+    Which is: 2
+  ERR_BAD_HEADER
+    Which is: 5]]></failure>
+    </testcase>
+  </testsuite>
+  <testsuite name="NetClientTest" tests="3" failures="1" disabled="1" skipped="1" errors="0" time="0.030" timestamp="2026-11-27T09:12:03">
+    <testcase name="ConnectsToLoopback" file="tests/net/client_test.cc" line="10" status="run" result="completed" time="0.015" classname="NetClientTest" />
+    <testcase name="TimesOutOnSlowPeer" file="tests/net/client_test.cc" line="33" status="run" result="completed" time="0.014" classname="NetClientTest">
+      <failure message="Value of: client.IsConnected()&#x0A;  Actual: true&#x0A;Expected: false" type=""><![CDATA[tests/net/client_test.cc:38
+Value of: client.IsConnected()
+  Actual: true
+Expected: false]]></failure>
+    </testcase>
+    <testcase name="DISABLED_RetriesOnReset" file="tests/net/client_test.cc" line="52" status="notrun" result="suppressed" time="0" classname="NetClientTest" />
+  </testsuite>
+  <testsuite name="UtilStringTest" tests="2" failures="0" disabled="0" skipped="0" errors="0" time="0.004" timestamp="2026-11-27T09:12:03">
+    <testcase name="TrimsWhitespace" file="tests/util/string_test.cc" line="8" status="run" result="completed" time="0.002" classname="UtilStringTest" />
+    <testcase name="SplitsOnDelimiter" file="tests/util/string_test.cc" line="19" status="run" result="completed" time="0.002" classname="UtilStringTest" />
+  </testsuite>
+</testsuites>

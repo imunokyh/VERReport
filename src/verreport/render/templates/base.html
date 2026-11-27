@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}VERReport{% endblock %} - {{ s.build.project }}</title>
+  <link rel="stylesheet" href="{{ root|default('') }}static/report.css">
+</head>
+<body>
+<header class="top">
+  <div class="top-inner">
+    <div>
+      <h1>{{ s.build.project }} <span class="muted">Verification Report</span></h1>
+      <div class="meta">
+        <span>빌드 <b>{{ s.build.build_number or '-' }}</b></span>
+        <span>빌드 일시 <b>{{ build_time }}</b></span>
+        {% if s.build.branch %}<span>브랜치 <b>{{ s.build.branch }}</b></span>{% endif %}
+        {% if s.build.commit %}<span>커밋 <b>{{ s.build.commit[:10] }}</b></span>{% endif %}
+      </div>
+    </div>
+    <div class="verdict {{ 'pass' if s.passed else 'fail' }}">{{ 'PASS' if s.passed else 'FAIL' }}</div>
+  </div>
+  <nav class="nav">
+    <a href="index.html" class="{{ 'active' if page == 'index' }}">Dashboard</a>
+    {% for key, ok in s.tool_results.items() %}
+    <a href="{{ key }}.html" class="{{ 'active' if page == key }}"><span class="dot {{ '' if ok else 'fail' }}"></span>{{ tools[key] }}</a>
+    {% endfor %}
+  </nav>
+</header>
+<main>
+{% block content %}{% endblock %}
+</main>
+<footer>리포트 생성 {{ generated_at }}</footer>
+{% block scripts %}{% endblock %}
+</body>
+</html>

@@ -1,0 +1,24 @@
+# Example configuration. Run:  verreport generate -c samples/verreport.yml -o report
+project: Demo
+
+# Tool result files (relative paths resolve against this file's directory).
+# Any subset may be given; command-line options override these.
+inputs:
+  gtest: gtest.xml
+  llvm_cov: llvm-cov.json
+  cppcheck: cppcheck.xml
+  lizard: lizard.csv
+
+thresholds:
+  lizard_ccn: 10        # CCN above this is a violation
+  lizard_length: 80     # function lines above this is a violation
+  coverage_line: 80     # line coverage target (%)
+
+# Module = first N directory components of a source path ...
+module_depth: 2
+# ... after stripping this prefix:
+# source_root: /work/proj
+# Explicit mapping (path prefix -> module name) takes precedence:
+# module_map:
+#   src/core: Core
+#   src/net: Network

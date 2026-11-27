@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<results version="2">
+    <cppcheck version="2.13.0"/>
+    <errors>
+        <error id="nullPointer" severity="error" msg="Null pointer dereference: p" verbose="Null pointer dereference: p" cwe="476">
+            <location file="src/core/parser.cc" line="87" column="12"/>
+        </error>
+        <error id="uninitvar" severity="error" msg="Uninitialized variable: len" verbose="Uninitialized variable: len" cwe="457">
+            <location file="src/net/client.cc" line="141" column="9"/>
+        </error>
+        <error id="memleak" severity="error" msg="Memory leak: buf" verbose="Memory leak: buf" cwe="401">
+            <location file="src/net/client.cc" line="203" column="5"/>
+        </error>
+        <error id="knownConditionTrueFalse" severity="style" msg="Condition 'n&gt;=0' is always true" verbose="Condition 'n&gt;=0' is always true" cwe="571">
+            <location file="src/core/parser.cc" line="132" column="14"/>
+        </error>
+        <error id="unusedVariable" severity="style" msg="Unused variable: tmp" verbose="Unused variable: tmp" cwe="563">
+            <location file="src/util/string_utils.cc" line="56" column="10"/>
+        </error>
+        <error id="passedByValue" severity="performance" msg="Function parameter 'name' should be passed by const reference." verbose="Parameter 'name' is passed by value. It could be passed as a const reference which is usually faster and recommended in C++." cwe="398">
+            <location file="src/util/string_utils.cc" line="74" column="40"/>
+        </error>
+        <error id="cstyleCast" severity="style" msg="C-style pointer casting" verbose="C-style pointer casting detected. C++ offers four different kinds of casts as replacements." cwe="398">
+            <location file="src/core/parser.cc" line="159" column="21"/>
+        </error>
+        <error id="missingInclude" severity="information" msg="Include file: &lt;sys/epoll.h&gt; not found." verbose="Include file: &lt;sys/epoll.h&gt; not found.">
+            <location file="src/net/client.cc" line="3" column="0"/>
+        </error>
+        <error id="constParameterReference" severity="style" msg="Parameter 'cfg' can be declared as reference to const" verbose="Parameter 'cfg' can be declared as reference to const" cwe="398">
+            <location file="src/net/client.cc" line="98" column="31"/>
+        </error>
+        <error id="invalidPrintfArgType_sint" severity="warning" msg="%d in format string (no. 1) requires 'int' but the argument type is 'unsigned int'." verbose="%d in format string (no. 1) requires 'int' but the argument type is 'unsigned int'." cwe="686">
+            <location file="src/util/log.cc" line="29" column="17"/>
+        </error>
+    </errors>
+</results>

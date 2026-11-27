@@ -1,0 +1,48 @@
+// Example declarative pipeline. Requires the "HTML Publisher" plugin.
+// BUILD_NUMBER / GIT_COMMIT / GIT_BRANCH are picked up automatically by verreport.
+pipeline {
+  agent any
+  stages {
+    stage('Build & Test') {
+      steps {
+        sh '''
+          cmake -B build -DCMAKE_CXX_COMPILER=clang++ \
+                -DCMAKE_CXX_FLAGS="-fprofile-instr-generate -fcoverage-mapping"
+          cmake --build build
+          LLVM_PROFILE_FILE=cov-%p.profraw ./build/unit_tests --gtest_output=xml:gtest.xml || true
+          llvm-profdata merge -sparse cov-*.profraw -o cov.profdata
+          llvm-cov export ./build/unit_tests -instr-profile=cov.profdata -format=text > llvm-cov.json
+        '''
+      }
+    }
+    stage('Static Analysis') {
+      steps {
+        sh '''
+          cppcheck --xml --xml-version=2 src 2> cppcheck.xml || true
+          lizard src --csv > lizard.csv || true
+        '''
+      }
+    }
+    stage('Report') {
+      steps {
+        // exit code 1 (verification FAIL) marks the build UNSTABLE instead of FAILURE
+        catchError(buildResult: 'UNSTABLE', stageResult: 'UNSTABLE') {
+          sh '''
+            verreport generate \
+              --gtest gtest.xml --llvm-cov llvm-cov.json \
+              --cppcheck cppcheck.xml --lizard lizard.csv \
+              --project "${JOB_NAME}" -o report --fail-on-violation
+          '''
+        }
+      }
+    }
+  }
+  post {
+    always {
+      publishHTML(target: [
+        reportDir: 'report', reportFiles: 'index.html', reportName: 'Verification Report',
+        keepAll: true, allowMissing: false, alwaysLinkToLastBuild: true
+      ])
+    }
+  }
+}
